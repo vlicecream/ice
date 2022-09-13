@@ -162,6 +162,14 @@ public:
 	/* Socks4 特定回调 */
 	bool OnSocks4Read();
 
+	/* 如果您仅使用 OnRawData 处理接收到的数据，请使用此选项 */
+	void DisableInputBuffer(bool = true);
+
+	void OnOptions(int,int,int,SOCKET);
+
+	void SetLineProtocol(bool = true);
+
+
 	/* 使用 SetLineProtocol = true 时获取未完成的行
 	    完成的线路将始终通过调用 OnLine 来报告 */
 	const std::string GetLine() const;
@@ -184,7 +192,7 @@ protected:
 	void OnRead( char *buf, size_t n );
 	void OnWrite();
 
-	CircularBuffer ibuf; ///< Circular input buffer
+	CircularBuffer ibuf; //< 循环输入缓冲区
 
 private:
 	TcpSocket& operator=(const TcpSocket& ) { return *this; }

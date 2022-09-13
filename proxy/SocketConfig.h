@@ -30,8 +30,11 @@
 /* 支持 OpenSSL */
 // #define HAVE_OPENSSL
 
+/* 支持 ipv6 */
+#define ENABLE_IPV6
+
 /* 异步解析器 */
-// #define ENABLE_RESOLVER
+#define ENABLE_RESOLVER
 
 /* 失去连接时 启用 tcp 重新连接 */
 // #define ENABLE_RECONNECT
@@ -41,7 +44,10 @@
 #define NO_GETADDRINFO
 
 /* 启用 socket 线程分离功能 */
-// #define ENABLE_DETACH
+#define ENABLE_DETACH
+
+/* 启用连接池 */
+#define ENABLE_POOL
 
 /* 关闭 socket 线程分离功能 */
 #ifndef ENABLE_DETACH

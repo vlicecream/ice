@@ -28,16 +28,12 @@ StreamSocket::~StreamSocket()
 
 void StreamSocket::SetConnecting(bool x)
 {
-	if (x != m_bConnecting)
-	{
+	if (x != m_bConnecting) {
 		m_bConnecting = x;
-		if (x)
-		{
-			SetTimeout( GetConnectTimeout() );
-		}
-		else
-		{
-			SetTimeout( 0 );
+		if (x) {
+			SetTimeout(GetConnectTimeout());
+		} else {
+			SetTimeout(0);
 		}
 	}
 }
@@ -51,8 +47,9 @@ bool StreamSocket::Connecting()
 
 bool StreamSocket::Ready()
 {
-	if (GetSocket() != INVALID_SOCKET && !Connecting() && !CloseAndDelete())
+	if (GetSocket() != INVALID_SOCKET && !Connecting() && !CloseAndDelete()) {
 		return true;
+	}
 	return false;
 }
 

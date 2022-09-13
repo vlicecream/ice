@@ -11,6 +11,7 @@
 
 Ipv4Address::Ipv4Address(port_t port) : m_valid(true)
 {
+	// 对这一块内存空间进行初始化赋值
 	memset(&m_addr, 0, sizeof(m_addr));
 	m_addr.sin_family = AF_INET;
 	m_addr.sin_port = htons( port );

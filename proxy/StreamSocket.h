@@ -2,7 +2,8 @@
  * Auther: icecream-xu
  * Date: 2022-09-03
  * Email: vlicecream@163.com
- * Detail:
+ * Detail: Implemented features in the streaming protocol
+ *					1. timeout  2. reconnect
  **/
 
 #ifndef __SOCKET_StreamSocket_H__
@@ -42,7 +43,7 @@ public:
 			如果套接字应该在关闭之前发送所有数据，则返回 true */
 	bool GetFlushBeforeClose();
 
-	/* 定义重新连接次数 (tcp only).
+	/* 定义重新连接次数 (tcp only)
 	    n = 0 - 不重试
 	    n > 0 - 重试的次数
 	    n = -1 - 一直重试 */
@@ -84,7 +85,7 @@ protected:
 
 private:
 	StreamSocket& operator=(const StreamSocket& ) { return *this; } // assignment operator
-	bool m_bConnecting; //< Flag indicating connection in progress
+	bool m_bConnecting; //< 指示正在连接的标志
 	int m_connect_timeout; //< 连接超时 (seconds)
 	bool m_flush_before_close; //< 关闭前发送所有数据 (default true)
 	int m_connection_retry; //< 最大的重新连接次数 (tcp)

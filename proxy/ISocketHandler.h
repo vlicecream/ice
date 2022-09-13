@@ -15,15 +15,12 @@
 #include "Socket.h"
 #include "StdLog.h"
 
-#ifdef SOCKETS_NAMESPACE
-namespace SOCKETS_NAMESPACE {
-#endif
-
-class SocketAddress;
-class IMutex;
+// class SocketAddress;
+// class IMutex;
 
 class ISocketHandler
 {
+	
 	friend class Socket;
 
 public:
@@ -32,24 +29,28 @@ public:
 	class PoolSocket : public Socket 
 	{
 		public:
-			poolSocket(ISocketHandler& h, Socket *src) : Socket(h) {
+			PoolSocket(ISocketHandler& h, Socket *src) : Socket(h) {
 				CopyConnection(src);
 				SetIsClient();
 			}
+
+			virtual ~PoolSocket();
+
 			void OnRead() {
 				Handler().LogError(this, "OnRead", 0, "data on hibernating socket", LOG_LEVEL_FATAL);
 				SetCloseAndDelete();
 			}
+
 			void OnOptions(int,int,int,SOCKET) {}
-	}
+	};
 #endif
 
 public:
 	virtual ~ISocketHandler() {}
 
 	/* 返回另一个实例 */
-	virtual ISocketHandler* Create(StdLog* = NULL) = 0;
-	virtual ISocketHandler* Create(IMutex&, ISocketHandler&, StdLog* = NULL) = 0;
+	virtual ISocketHandler* Create(StdLog* = nullptr) = 0;
+	virtual ISocketHandler* ISocketHandler::Create(IMutex&, ISocketHandler&, StdLog* = nullptr) = 0;
 
 	/* 使用父级创建的处理程序 */
 	virtual bool ParentHandlerIsValid() = 0;
@@ -69,7 +70,7 @@ public:
 	/* 线程已启用 */
 	virtual bool IsThreaded() = 0;
 
-	/* Enable select release */
+	/* 启用 select 发布 */
 	virtual void EnableRelease() = 0;
 
 	/* 选择发布 */
@@ -144,10 +145,45 @@ public:
 	/* 启用连接池（默认禁用）。 */
 	virtual void EnablePool(bool = true) = 0;
 
-	/* 检查连接吃状态
+	/* 检查连接池状态
 		  如果启用返回 true */
 	virtual bool PoolEnabled() = 0;
 #endif // ENABLE_POOL
+
+#ifdef ENABLE_RESOLVER
+	/* 开启异步DNS
+			param -> port 异步DNS服务器监听端口 */
+	virtual void EnabelResolver(port_t = 16667) = 0;
+
+	/* 检查解析器状态 (如果启用了解析器, 则返回 true) */
+	virtual bool ResolverEnabled() = 0;
+
+	/* 排队一个 dns 请求
+			param -> host 要解析的主机名
+			param -> port 端口号将在 Socket::OnResolved 回调中回显 */
+	virtual int Resolve(Socket*, const std::string& host, port_t port) = 0;
+
+	/* 做一个反向 dns 查找 */
+	virtual int Resolve(Socket*, ipaddr_t ipaddr) = 0;
+
+	/* 获取异步 dns 服务器的监听端口 */
+	virtual port_t GetResolverPort() = 0;
+
+	/* 解析器线程准备好查询 */
+	virtual bool ResolverReady() = 0;
+
+	/* 如果套接字等待解决事件，则返回true */
+	virtual bool Resolving(Socket*) = 0;
+#endif
+
+#ifdef ENABLE_DETACH
+	/* 表示处理程序在 SocketThread 下运行 */ 
+	virtual void SetSlave(bool b = true) = 0;
+
+	/* 表示处理程序在 SocketThread 下运行 */
+	virtual bool IsSlave() = 0;
+#endif // ENABLE_DETACH
+
 };
 
 #endif // __SOCKET_IHANDLER_H__

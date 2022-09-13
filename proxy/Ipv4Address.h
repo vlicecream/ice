@@ -7,8 +7,8 @@
 #ifndef __SOCKET_Ipv4Address_H__
 #define __SOCKET_Ipv4Address_H__
 
-#include<netinet/in.h>
-#include "SocketConfig.h"
+#include <netinet/in.h>
+// #include "SocketConfig.h"
 #include "SocketAddress.h"
 
 
@@ -55,11 +55,11 @@ public:
 	std::string Reverse();
 
 	/* 解析主机名 */
-static	bool Resolve(const std::string& hostname,struct in_addr& a);
+	static	bool Resolve(const std::string& hostname,struct in_addr& a);
 	/* 反向解析 (IP to hostname) */
-static	bool Reverse(struct in_addr& a,std::string& name);
+	static	bool Reverse(struct in_addr& a,std::string& name);
 	/* 转换地址结构为文本 */
-static	std::string Convert(struct in_addr& a);
+	static	std::string Convert(struct in_addr& a);
 
 private:
 	Ipv4Address(const Ipv4Address& ) {} // copy constructor

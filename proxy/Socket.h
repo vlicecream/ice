@@ -17,20 +17,25 @@
 
 #include "SocketConfig.h"
 #include "SocketInclude.h"
+#include "SocketAddress.h"
+#include "ISocketHandler.h"
+#include "IFile.h"
+#include "SocketThread.h"
+#include "Thread.h"
 
-class ISocketHandler;
-class SocketAddress;
-class IFile;
-class SocketThread;
 
 class Socket {
+
 public:
-	// default
+	// 构造函数
 	Socket(ISocketHandler&);
+
+	// 析构函数
 	virtual ~Socket();
 
-	/* Socket 实例化类的方法 */
-	virtual Socket* Create() { return NULL; }
+	/* Socket 实例化类的方法 
+			注意：套接字类仍然需要带有一个 ISocketHandler& 作为输入参数的“默认”构造函数 */
+	// virtual Socket* Create() { return NULL; }
 	
 	/* 返回对拥有套接字的套接字处理程序的引用。如果套接字已分离，则这是对从套接字处理程序的引用 */
 	ISocketHandler& Handler() const;
@@ -66,11 +71,11 @@ public:
 
 
 	/* 返回指向在传入连接上创建此实例的 ListenSocket 的指针 */
-	Socket *GetParent();
+	Socket* GetParent();
 
 	/** 被 ListenSocket 用来设置新创建的父指针
 	 *  套接字实例 */
-	void SetParent(Socket *);
+	void SetParent(Socket*);
 
 	/** 从 ListenSocket<> 获取监听端口 */
 	virtual port_t GetPort();
@@ -91,7 +96,7 @@ public:
 	std::unique_ptr<SocketAddress> GetClientRemoteAddress();
 
 	/* TCP & UDP 使用的公共接口 - 设置 缓冲区大小 */
-	virtual void SendBuf(const char *,size_t,int = 0);
+	virtual void SendBuf(const char*, size_t,int = 0);
 
 	/* TCP & UDP 使用的公共接口 - 发送 */
 	virtual void Send(const std::string&,int = 0);
@@ -115,7 +120,7 @@ public:
 	/* 由 ListenSocket 使用 ipv4 and ipv6 */
 	void SetRemoteAddress(SocketAddress&);
 
-	// 名称事件回调
+	// \名称事件回调\ {
 	
 	/* 当文件描述符中有内容要读取时调用 */
 	virtual void OnRead();
@@ -134,6 +139,7 @@ public:
 
 	/* 当传入连接完成时调用 */
 	virtual void OnAccept();
+
 	/* 在读取完整行并且套接字在其中时调用
 	 * 线路协议模式 */
 	virtual void OnLine(const std::string& );
@@ -173,8 +179,11 @@ public:
 	/* 连接超时 */
 	virtual void OnConnectTimeout();
 
-	/* 命名 Socket 模式标志, set/reset */
+	// }
+	
 
+	/* 命名 Socket 模式标志, set/reset */ 
+	// {
 	/* 当您希望套接字处理程序在使用后删除套接字实例时，通过处理程序将 delete 设置为 true */
 	void SetDeleteByHandler(bool = true);
 
@@ -195,7 +204,7 @@ public:
 	time_t TimeSinceClose();
 
 	/* 忽略只读取 socket 的事件. */
-	void DisableRead(bool x = true);
+	void DisableRead(bool b = true);
 
 	/* 检查忽略读取事件标志
 			（如果应该忽略读取事件，则返回 true */
@@ -216,11 +225,37 @@ public:
 	bool Lost();
 
 	/* 设置标志表明套接字正在被套接字处理程序主动删除 */
-	void SetErasedByHandler(bool x = true);
+	void SetErasedByHandler(bool b = true);
 	/* 获取指示套接字的标志值被套接字处理程序删除。 */
 	bool ErasedByHandler();
 
 	//@}
+
+
+
+	// TCP options in TcpSocket.h/TcpSocket.cpp
+
+	//{
+
+	// LIST_CALLONCONNECT
+
+	/* 指示套接字在下一个套接字处理程序周期调用 OnConnect 回调。 */
+	void SetCallOnConnect(bool b = true);
+
+	/* 检查连接标志上的调用
+			（如果 OnConnect() 应该被称为 a.s.a.p，则返回 true */
+	bool CallOnConnect();
+
+	// LIST_RETRY
+
+	/* 设置标志以在连接超时后启动连接尝试 */
+	void SetRetryClientConnect(bool b = true);
+
+	/* 检查是否应该尝试连接
+			当需要再次尝试时返回true */
+	bool RetryClientConnect();
+
+	// }
 
 	/* name 远程连接信息 */
 	//@{
@@ -262,7 +297,112 @@ public:
 //   std::string GetSockAddress6();
 // #endif
 // #endif
+
+	#ifdef ENABLE_POOL	
+	/* Client = 连接 TcpSocket */
+	void SetIsClient();
+
+	/* 来自 socket() 调用的套接字类型 */
+	void SetSocketType(int x);
+
+	/* 来自 socket() 调用的套接字类型 */
+	int GetSocketType();
+
+	/* 来自 socket() 调用的协议类型 */
+	void SetSocketProtocol(const std::string& x);
+
+	/* 来自 socket() 调用的协议类型 */
+	const std::string& GetSocketProtocol();
+
+	/* 指示客户端套接字在使用后在连接池中保持打开状态。
+		如果您已使用 tcp 连接到服务器，则可以在删除套接字实例后调用 SetRetain 使连接保持打开状态
+		您与同一服务器建立的下一个连接将重用已打开的连接，如果它仍然可用 */
+	void SetRetain();
+
+	/* 检查保留标志
+			如果在使用后应该将套接字移动到连接池，则返回 true */
+	bool Retain();
+
+	/** 从 sock 复制连接参数 */
+	void CopyConnection(Socket* sock);
+	#endif // ENABLE_POOL
+
+	#ifdef ENABLE_RESOLVER
+	int Resolve(const std::string& host, port_t port = 0);
+
+	virtual void OnResolved(int id, ipaddr_t ipaddr, port_t port);
+
+	int Resolve(ipaddr_t a);
+
+	virtual void OnReverseResolved(int id,const std::string& name);
+
+	virtual void OnResolveFailed(int id);
+	#endif
+
+	#ifdef ENABLE_DETACH
+	/* 当新的套接字线程已启动并且此套接字已准备好再次操作时触发回调 */
+	virtual void OnDetached();
+
+	void SetDetach(bool b = true);
+
+	/* 检查分离标志 
+			如果套接字应该分离到自己的线程，则返回 true */
+	bool IsDetach();
+
+	void SetDetached(bool b = true);
+
+	/* 检查分离标志
+	    如果套接字在自己的线程中运行 则返回true*/
+	bool IsDetached() const;
+	
+	/* 命令此套接字启动其自己的线程并在准备好操作时调用 OnDetached */
+	bool Detach();
+
+	/* 存储从属sockethandler指针 */
+	void SetSlaveHandler(ISocketHandler*);
+
+
+	/* 为此套接字创建新线程以分离运行 */
+	void DetachSocket();
+	#endif // ENABLE_DETACH
+
 	socketuid_t UniqueIdentifier() { return m_uid; }
+
+public:
+	// SOCKET options
+	bool SoAcceptconn();
+	bool SetSoBroadcast(bool b = true);
+	bool SetSoDebug(bool b = true);
+	int SoError();
+	bool SetSoDontroute(bool b = true);
+	bool SetSoLinger(int onoff, int linger);
+	bool SetSoOobinline(bool b = true);
+	bool SetSoRcvlowat(int);
+	bool SetSoSndlowat(int);
+	bool SetSoRcvtimeo(struct timeval&);
+	bool SetSoSndtimeo(struct timeval&);
+	bool SetSoRcvbuf(int);
+	int SoRcvbuf();
+	bool SetSoSndbuf(int);
+	int SoSndbuf();
+	int SoType();
+	bool SetSoReuseaddr(bool b = true);
+	bool SetSoKeepalive(bool b = true);
+
+	#ifdef ENABLE_POOL
+	int m_socket_type; //< 套接字类型，来自 socket() 调用
+	std::string m_socket_protocol; //< Protocol, 来自 socket() 调用
+	bool m_bClient; //< 只有客户端连接是池
+	bool m_bRetain; //< 保持连接关闭
+	#endif
+
+	#ifdef ENABLE_DETACH
+	bool m_detach; //< 套接字命令分离标志
+	bool m_detached; //< 套接字已分离
+	SocketThread *m_pThread; //< 分离套接字线程类指针
+	ISocketHandler *m_slave_handler; //< 分离时的实际套接字处理程序
+	#endif
+
 
 protected:
 	/* 默认构造函数不可用 */
@@ -283,40 +423,6 @@ protected:
 	// bool m_b_ssl_server; //< 如果传入的是 SSL TcpSocket 则为 true
 	// #endif
 
-	// SOCKET options
-	bool SoAcceptconn();
-	bool SetSoBroadcast(bool x = true);
-	bool SetSoDebug(bool x = true);
-	int SoError();
-	bool SetSoDontroute(bool x = true);
-	bool SetSoLinger(int onoff, int linger);
-	bool SetSoOobinline(bool x = true);
-	bool SetSoRcvlowat(int);
-	bool SetSoSndlowat(int);
-	bool SetSoRcvtimeo(struct timeval&);
-	bool SetSoSndtimeo(struct timeval&);
-	bool SetSoRcvbuf(int);
-	int SoRcvbuf();
-	bool SetSoSndbuf(int);
-	int SoSndbuf();
-	int SoType();
-	bool SetSoReuseaddr(bool x = true);
-	bool SetSoKeepalive(bool x = true);
-
-	#ifdef ENABLE_POOL
-	int m_socket_type; //< 套接字类型，来自 socket() 调用
-	std::string m_socket_protocol; //< Protocol, 来自 socket() 调用
-	bool m_bClient; //< 只有客户端连接是池
-	bool m_bRetain; //< 保持连接关闭
-	#endif
-
-	// #ifdef ENABLE_DETACH
-	// bool m_detach; //< 套接字命令分离标志
-	// bool m_detached; //< 套接字已分离
-	// SocketThread *m_pThread; //< 分离套接字线程类指针
-	// ISocketHandler *m_slave_handler; //< 分离时的实际套接字处理程序
-	// #endif
-
 private:
 	ISocketHandler& m_handler;	//< socket 中的 headler 引用
 	SOCKET m_socket; //< 文件描述符
@@ -330,7 +436,7 @@ private:
 	time_t m_tClose; //< 下令关闭的时间（以秒为单位）
 	std::unique_ptr<SocketAddress> m_client_remote_address; //< 最后一个connect()的地址
 	std::unique_ptr<SocketAddress> m_remote_address; //< 远端地址	
-	IFile *m_traffic_monitor;
+	IFile* m_traffic_monitor;
 	time_t m_timeout_start; //< 由 SetTimeout 设置
 	time_t m_timeout_limit; //< 由 SetTimeout 定义
 	bool m_bLost; //< 连接丢失
@@ -338,9 +444,6 @@ private:
 	socketuid_t m_uid;
 	bool m_call_on_connect; //< OnConnect 将在下一个 ISocketHandler 循环中调用
 	bool m_b_retry_connect; //< 在下一个 ISocketHandler 周期尝试另一个连接尝试
-
-
-
 };
 
-#endif // __SOCKETs_Socket_H__
+#endif // __SOCKET_Socket_H__
