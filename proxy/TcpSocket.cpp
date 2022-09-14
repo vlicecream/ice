@@ -604,8 +604,9 @@ bool TcpSocket::SetTcpNodelay(bool x)
 }
 
 TcpSocket::CircularBuffer::CircularBuffer(size_t size)
-:buf(new char[2 * size])
-,m_max(size)
+	:
+		buf(new char[2 * size]),
+		m_max(size)
 ,m_q(0)
 ,m_b(0)
 ,m_t(0)

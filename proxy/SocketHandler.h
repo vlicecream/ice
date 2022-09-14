@@ -53,6 +53,7 @@ public:
 	virtual void SetNumberOfThreads(size_t n) ;
 	virtual bool IsThreaded() ;
 
+	/* UdpSocket */
 	virtual void EnableRelease() ;
 	virtual void Release() ;
 	
@@ -71,8 +72,8 @@ public:
 
 	/* 设置读/写/异常文件描述符集 (fd_set) */
 	void ISocketHandler_Add(Socket *, bool bRead, bool bWrite) ;
-  void ISocketHandler_Mod(Socket *, bool bRead, bool bWrite) ;
-  void ISocketHandler_Del(Socket *) ;
+	void ISocketHandler_Mod(Socket *, bool bRead, bool bWrite) ;
+	void ISocketHandler_Del(Socket *) ;
 
 	/* 等待事件 生成回调 */
 	int Select(long sec, long usec) ;
@@ -102,13 +103,9 @@ public:
 
 	void SetCallOnConnect(bool = true) ;
 	void SetDetach(bool = true) ;
-  void SetTimeout(bool = true) ;
-  void SetRetry(bool = true) ;
-  void SetClose(bool = true) ;
-
-private:
-	static FILE *m_event_file;
-	static unsigned long m_evet_counter;
+	void SetTimeout(bool = true) ;
+	void SetRetry(bool = true) ;
+	void SetClose(bool = true) ;
 
 public:
 #ifdef ENABLE_POOL
@@ -116,7 +113,7 @@ public:
 	ISocketHandler::PoolSocket* FindConnection(int type, const std::string& protocol, SocketAddress&) ;
 
 	/* 启用连接池(默认禁用) */
-	void EnablePool(bool x = true) ;
+	void EnablePool(bool b = true) ;
 
 	/* 检查池状态
 			如果启用了连接池，则返回 true */
@@ -188,6 +185,9 @@ protected:
 	bool m_b_parent_is_valid;
 
 private:
+	static FILE *m_event_file;
+	static unsigned long m_evet_counter;
+private:
 	void RebuildFdset();
 	void Set(Socket*, bool, bool);
 private:
@@ -202,18 +202,18 @@ private:
 	std::list<socketuid_t> m_fds_erase;  //< 要从m_sockets中删除的文件描述符
 
 	bool m_b_check_callonconnect;
-  bool m_b_check_detach;
-  bool m_b_check_timeout;
-  bool m_b_check_retry;
-  bool m_b_check_close;
+	bool m_b_check_detach;
+	bool m_b_check_timeout;
+	bool m_b_check_retry;
+	bool m_b_check_close;
 	
 #ifdef ENABLE_POOL
-	bool m_b_enable_poll;
+	bool m_b_enable_pool;
 #endif 
 
 #ifdef ENABLE_RESOLVER
 	int m_resolv_id; //< 解析器 id 计数器
-	ResolveServer* m_resolver; //< 解析器线程指针
+	// ResolveServer* m_resolver; //< 解析器线程指针
 	port_t m_resolver_port; //< 解析器监听端口
 	std::map<socketuid_t, bool> m_resolve_q; //< 解决队列
 #endif

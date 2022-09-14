@@ -9,8 +9,6 @@
 #define __SOCKET_IFile_H__
 
 #include <string>
-// #include "SocketConfig.h"
-
 
 class IFile
 {
