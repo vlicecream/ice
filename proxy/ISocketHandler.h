@@ -34,7 +34,7 @@ public:
 				SetIsClient();
 			}
 
-			virtual ~PoolSocket();
+			virtual ~PoolSocket() {};
 
 			void OnRead() {
 				Handler().LogError(this, "OnRead", 0, "data on hibernating socket", LOG_LEVEL_FATAL);

@@ -730,7 +730,7 @@ unsigned long TcpSocket::CircularBuffer::ByteCounter(bool clear)
 std::string TcpSocket::CircularBuffer::ReadString(size_t l)
 {
 	char *sz = new char[l + 1];
-	if (!Read(sz, l)) // 失败，在 Read() 方法中调试打印输出	{
+	if (!Read(sz, l)) {// 失败，在 Read() 方法中调试打印输出	{
 		delete[] sz;
 		return "";
 	}

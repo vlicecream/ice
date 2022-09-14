@@ -20,7 +20,8 @@
 #include "IMutex.h"
 #include "SocketHandlerThread.h"
 
-class ResolveServer;
+class IMutex;
+// class ResolveServer;
 
 /* socket 容器类 - 事件生成器 */
 class SocketHandler : public ISocketHandler 
@@ -40,70 +41,70 @@ public:
 	/* 析构函数 */
 	~SocketHandler();
 
-	virtual ISocketHandler* Create(IMutex&, ISocketHandler&, StdLog* = nullptr) override;
-	virtual ISocketHandler* Create(StdLog* = nullptr) override;
+	virtual ISocketHandler* Create(IMutex&, ISocketHandler&, StdLog* = nullptr) ;
+	virtual ISocketHandler* Create(StdLog* = nullptr) ;
 
-	virtual bool ParentHandlerIsValid() override;
+	virtual bool ParentHandlerIsValid() ;
 
-	virtual ISocketHandler& ParentHandler() override;
-	virtual ISocketHandler& GetRandomHandler() override;
-	virtual ISocketHandler& GetEffectiveHandler() override;
+	virtual ISocketHandler& ParentHandler() ;
+	virtual ISocketHandler& GetRandomHandler() ;
+	virtual ISocketHandler& GetEffectiveHandler() ;
 
-	virtual void SetNumberOfThreads(size_t n) override;
-	virtual bool IsThreaded() override;
+	virtual void SetNumberOfThreads(size_t n) ;
+	virtual bool IsThreaded() ;
 
-	virtual void EnableRelease() override;
-	virtual void Release() override;
+	virtual void EnableRelease() ;
+	virtual void Release() ;
 	
 	/* 获取线程安全操作的互斥量参考 */
-	IMutex& GetMutex() const override;
+	IMutex& GetMutex() const ;
 
 	/* 为错误回调注册 StdLog 对象
 			param -> 指向日志类的指针 */
-	void RegStdLog(StdLog* log) override;
+	void RegStdLog(StdLog* log) ;
 
 	/* 将错误记录到日志类以进行打印/存储 */
-	void LogError(Socket *p, const std::string& user_text, int err, const std::string& sys_err, loglevel_t t = LOG_LEVEL_ERROR) override;
+	void LogError(Socket *p, const std::string& user_text, int err, const std::string& sys_err, loglevel_t t = LOG_LEVEL_ERROR) ;
 
 	/* 将套接字实例添加到套接字映射。删除总是自动的 */
-	void Add(Socket*) override;
+	void Add(Socket*) ;
 
 	/* 设置读/写/异常文件描述符集 (fd_set) */
-	void ISocketHandler_Add(Socket *, bool bRead, bool bWrite) override;
-  void ISocketHandler_Mod(Socket *, bool bRead, bool bWrite) override;
-  void ISocketHandler_Del(Socket *) override;
+	void ISocketHandler_Add(Socket *, bool bRead, bool bWrite) ;
+  void ISocketHandler_Mod(Socket *, bool bRead, bool bWrite) ;
+  void ISocketHandler_Del(Socket *) ;
 
 	/* 等待事件 生成回调 */
-	int Select(long sec, long usec) override;
+	int Select(long sec, long usec) ;
 
 	/* 在检测到事件之前，此方法不会返回 */
-	int Select() override;
+	int Select() ;
 
 	/* 等待事件 生成回调 */
-	int Select(struct timeval* tsel) override;
+	int Select(struct timeval* tsel) ;
 
 	/* 检查一个套接字是否真的被这个套接字处理程序处理了 */
-	bool Valid(Socket *) override;
-	bool Valid(socketuid_t) override;
+	bool Valid(Socket *) ;
+	bool Valid(socketuid_t) ;
 
 	/* 返回此处理程序处理的套接字数目 */
-	size_t GetCount() override;
-	size_t MaxCount() override { return FD_SETSIZE; };
+	size_t GetCount() ;
+	size_t MaxCount()  { return FD_SETSIZE; };
 	
 	/* 覆盖并返回 false 以拒绝所有传入连接
 	   param -> p ListenSocket 类指针（使用 GetPort 识别是哪一个） */
-	bool OkToAccept(Socket *p) override;
+	bool OkToAccept(Socket *p) ;
 
 	/* 小心使用，如果是多线程的，一定要用h.GetMutex()锁定 */
-	const std::map<SOCKET, Socket*>& AllSockets() override { return m_sockets; };
+	const std::map<SOCKET, Socket*>& AllSockets()  { return m_sockets; };
 
-	size_t MaxTcpLineSize() override { return TCP_LINE_SIZE; };
+	size_t MaxTcpLineSize()  { return TCP_LINE_SIZE; };
 
-	void SetCallOnConnect(bool = true) override;
-	void SetDetach(bool = true) override;
-  void SetTimeout(bool = true) override;
-  void SetRetry(bool = true) override;
-  void SetClose(bool = true) override;
+	void SetCallOnConnect(bool = true) ;
+	void SetDetach(bool = true) ;
+  void SetTimeout(bool = true) ;
+  void SetRetry(bool = true) ;
+  void SetClose(bool = true) ;
 
 private:
 	static FILE *m_event_file;
@@ -112,49 +113,49 @@ private:
 public:
 #ifdef ENABLE_POOL
 	/* 查找可用的打开连接（由连接池使用） */
-	ISocketHandler::PoolSocket* FindConnection(int type, const std::string& protocol, SocketAddress&) override;
+	ISocketHandler::PoolSocket* FindConnection(int type, const std::string& protocol, SocketAddress&) ;
 
 	/* 启用连接池(默认禁用) */
-	void EnablePool(bool x = true) override;
+	void EnablePool(bool x = true) ;
 
 	/* 检查池状态
 			如果启用了连接池，则返回 true */
-	bool PoolEnabled() override;
+	bool PoolEnabled() ;
 #endif
 
 #ifdef ENABLE_RESOLVER
 	/* 开启异步DNS
 			param -> port 异步DNS服务器监听端口 */
-	void EnabelResolver(port_t = 16667) override;
+	void EnabelResolver(port_t = 16667) ;
 
 	/* 检查解析器状态 (如果启用了解析器, 则返回 true) */
-	bool ResolverEnabled() override;
+	bool ResolverEnabled() ;
 
 	/* 排队一个 dns 请求
 			param -> host 要解析的主机名
 			param -> port 端口号将在 Socket::OnResolved 回调中回显 */
-	int Resolve(Socket*, const std::string& host, port_t port) override;
+	int Resolve(Socket*, const std::string& host, port_t port) ;
 
 	/* 做一个反向 dns 查找 */
-	int Resolve(Socket*, ipaddr_t ipaddr) override;
+	int Resolve(Socket*, ipaddr_t ipaddr) ;
 
 	/* 获取异步 dns 服务器的监听端口 */
-	port_t GetResolverPort() override;
+	port_t GetResolverPort() ;
 
 	/* 解析器线程准备好查询 */
-	bool ResolverReady() override;
+	bool ResolverReady() ;
 
 	/* 如果套接字等待解决事件，则返回true */
-	bool Resolving(Socket*) override;
+	bool Resolving(Socket*) ;
 #endif
 
 #ifdef ENABLE_DETACH
 
 	/* 表示处理程序在 SocketThread 下运行 */ 
-	void SetSlave(bool b = true) override;
+	void SetSlave(bool b = true) ;
 
 	/* 表示处理程序在 SocketThread 下运行 */
-	bool IsSlave() override;
+	bool IsSlave() ;
 #endif // ENABLE_DETACH
 			 //
 protected:
@@ -164,10 +165,10 @@ protected:
 																
 protected:
 	/* 实际调用 select() */
-	int ISocketHandler_Select(struct timeval*) override;
+	int ISocketHandler_Select(struct timeval*) ;
 
 	/* 从socket映射中移除socket，由socket类使用 */
-	void Remove(Socket*) override;
+	void Remove(Socket*) ;
 
 	/* 计划删除套接字 */
 	void DeleteSocket(Socket*);

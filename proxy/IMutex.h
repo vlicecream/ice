@@ -8,14 +8,13 @@
 #ifndef __SOCKET_IMutex_H__
 #define __SOCKET_IMutex_H__
 
-// #include "SocketInclude.h"
-
 class IMutex
 {
 public:
 	virtual ~IMutex() {}
 
 	virtual void Lock() const = 0;
+
 	virtual void Unlock() const = 0;
 };
 
