@@ -30,18 +30,24 @@
 /* 支持 OpenSSL */
 // #define HAVE_OPENSSL
 
+/* 支持 "select" 多路复用 */
+#define ENABLE_SELECT
+
+/* 支持 "epoll" 多路复用 */
+#define ENABLE_EPOLL
+
 /* 支持 ipv6 */
-#define ENABLE_IPV6
+// #define ENABLE_IPV6
 
 /* 异步解析器 */
-#define ENABLE_RESOLVER
+// #define ENABLE_RESOLVER
 
 /* 失去连接时 启用 tcp 重新连接 */
-// #define ENABLE_RECONNECT
+#define ENABLE_RECONNECT
 
 /* 如果您的操作系统不支持“getaddrinfo”和“getnameinfo”函数调用
 		请定义 NO_GETADDRINFO */
-#define NO_GETADDRINFO
+// #define NO_GETADDRINFO
 
 /* 启用 socket 线程分离功能 */
 #define ENABLE_DETACH

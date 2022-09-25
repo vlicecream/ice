@@ -9,11 +9,9 @@
 #define __SOCKET_SocketThread_H__
 
 
-#include "SocketConfig.h"
-#ifdef ENABLE_DETACH
-#include "Thread.h"
 #include "SocketHandler.h"
-#endif
+#include "SocketConfig.h"
+#include "Thread.h"
 
 class Socket;
 

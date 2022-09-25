@@ -10,7 +10,6 @@
 #include <string>
 #include <sys/socket.h>
 #include <memory>
-// #include "SocketConfig.h"
 #include "SocketInclude.h"
 
 /*
@@ -26,7 +25,7 @@ public:
 	virtual ~SocketAddress() {}
 
 	/* 得到一个地址结构的指针 */
-	virtual operator struct sockaddr *() = 0;
+	virtual operator struct sockaddr* () = 0;
 
 	/* 获取地址结构的长度 */
 	virtual operator socklen_t() = 0;
@@ -44,7 +43,7 @@ public:
 
 	/* 设置 socket 地址
 			param sa -> 指向 'struct sockaddr_in' or 'struct sockaddr_in6' */
-	virtual void SetAddress(struct sockaddr *sa) = 0;
+	virtual void SetAddress(struct sockaddr* sa) = 0;
 
 	/* 将地址转换为文本 */
 	virtual std::string Convert(bool include_port) = 0;

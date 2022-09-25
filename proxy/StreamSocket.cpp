@@ -7,7 +7,6 @@
 #include "StreamSocket.h"
 #include "ISocketHandler.h"
 
-// StreamSocket::StreamSocket(ISocketHandler& h) :Socket(h) {}
 StreamSocket::StreamSocket(ISocketHandler& h) 
 	: 
 	Socket(h),

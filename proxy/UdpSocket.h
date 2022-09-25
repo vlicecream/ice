@@ -9,10 +9,11 @@
 
 
 #include <sys/socket.h>
-#include "SocketAddress.h"
 #include "SocketInclude.h"
 #include "SocketConfig.h"
 #include "Socket.h"
+
+class SocketAddress;
 
 class UdpSocket : public Socket
 {

@@ -35,7 +35,7 @@ Thread::~Thread()
 {
 	m_b_destructor = true;
 	if (m_running) {
-		SetReleased(true);
+		SetRelease(true);
 		SetRunning(false);
 		// 休眠一秒给线程类Run方法足够的时间从run loop中释放
 		Utility::Sleep(1000);
@@ -43,7 +43,7 @@ Thread::~Thread()
 	pthread_attr_destroy(&m_attr);
 }
 
-threadfunc_t STDPREFIX Thread::StartThread(threadparam_t tpt)
+threadfunc_t  Thread::StartThread(threadparam_t tpt)
 {
 	/* 在这里睡觉以等待派生线程类构造函数设置 vtable.... 只是看着它就很痛 */
 	Utility::Sleep(5);
@@ -78,7 +78,7 @@ bool Thread::IsReleased()
 	return IsReleased();
 }
 
-void Thread::SetReleased(bool x) 
+void Thread::SetRelease(bool x) 
 {
 	m_release = x;
 	if (x) {

@@ -124,7 +124,7 @@ bool TcpSocket::Open(SocketAddress& ad,SocketAddress& bind_ad,bool skip_socks)
 	// 对于异步连接，套接字必须是非阻塞的
 	if (!SetNonblocking(true, s)) {
 		SetCloseAndDelete();
-		closesocket(s);
+		// TODO: closesocket(s);
 		return false;
 	}
 #ifdef ENABLE_POOL
@@ -145,7 +145,7 @@ bool TcpSocket::Open(SocketAddress& ad,SocketAddress& bind_ad,bool skip_socks)
 		} else {
 			Handler().LogError(this, "connect: failed", Errno, StrError(Errno), LOG_LEVEL_FATAL);
 			SetCloseAndDelete();
-			closesocket(s);
+			// TODO: closesocket(s);
 			return false;
 		}
 	} else {
@@ -156,6 +156,28 @@ bool TcpSocket::Open(SocketAddress& ad,SocketAddress& bind_ad,bool skip_socks)
 	// 'true' 表示已连接或正在连接（尚未连接）
   // 'false' 表示某事失败
 	return true; //!Connecting();
+}
+
+bool TcpSocket::Bind(SocketAddress& ad, const std::string& protocol ,int backlog)
+{
+	// 创建 socket
+	int socketFd = CreateSocket(ad.GetFamily(), SOCK_STREAM, protocol);	
+	if (socketFd == -1) {
+		Handler().LogError(this, "Bind CreateSocket Failed", Errno, StrError(Errno), LOG_LEVEL_WARNING);
+		return false;
+	}
+
+	if (bind(socketFd, ad, ad) == -1) {
+		Handler().LogError(this, "Bind bind() failed", Errno, StrError(Errno), LOG_LEVEL_ERROR);
+		return false;
+	}
+
+	if (listen(socketFd, backlog) == -1) {
+		Handler().LogError(this, "Bind listen() failed", Errno, StrError(Errno), LOG_LEVEL_ERROR);
+		return false;
+	}
+
+	return true;
 }
 
 bool TcpSocket::Open(const std::string &host,port_t port)
@@ -460,14 +482,11 @@ void TcpSocket::SendBuf(const char *buf,size_t len,int)
 	}
 
 	int n = TryWrite(buf, len);
-	if (n >= 0 && n < (int)len)
-	{
+	if (n >= 0 && n < (int)len) {
 		Buffer(buf + n, len - n);
 	}
 
-
 	// 检查输出缓冲区集，相应地设置/重置 m_wfds
-
 	{
 		bool br = !IsDisableRead();
 		if (m_obuf.size())
@@ -499,27 +518,23 @@ void TcpSocket::Sendf(const char *format, ...)
 
 int TcpSocket::Close()
 {
-	if (GetSocket() == INVALID_SOCKET) // 这可能发生
-	{
-		Handler().LogError(this, "Socket::Close", 0, "file descriptor invalid", LOG_LEVEL_WARNING);
+	if (GetSocket() == INVALID_SOCKET) {  // 要注意这个情况 是有可能会发生的
+		Handler().LogError(this, "TcpSocket::Close", 0, "file descriptor invailed", LOG_LEVEL_WARNING);
 		return 0;
 	}
 	int n;
+
+	// 设置 socket 为非阻塞
 	SetNonblocking(true);
-	if (!Lost() && IsConnected() && !(GetShutdown() & SHUT_WR))
-	{
-		if (shutdown(GetSocket(), SHUT_WR) == -1)
-		{
-			// failed...
-			Handler().LogError(this, "shutdown", Errno, StrError(Errno), LOG_LEVEL_ERROR);
+	if (!Lost() && IsConnected() && !(GetShutdown() & SHUT_WR)) {
+		if (shutdown(GetSocket(), SHUT_WR) == -1) {
+			Handler().LogError(this, "TcpSocket::Close - shutdown", Errno, StrError(Errno),LOG_LEVEL_ERROR);
 		}
 	}
-	//
+
 	char tmp[1000];
-	if (!Lost() && (n = recv(GetSocket(),tmp,1000,0)) >= 0)
-	{
-		if (n)
-		{
+	if (!Lost() && (n = recv(GetSocket(), tmp, 1000, 0)) >= 0) {
+		if (n) {
 			Handler().LogError(this, "read() after shutdown", n, "bytes read", LOG_LEVEL_WARNING);
 		}
 	}
@@ -577,9 +592,9 @@ void TcpSocket::DisableInputBuffer(bool x)
 void TcpSocket::OnOptions(int family,int type,int protocol,SOCKET s)
 {
 	DEB(	fprintf(stderr, "Socket::OnOptions()\n");)
-
-	SetSoReuseaddr(true);
-	SetSoKeepalive(true);
+	// TODO:
+	// SetSoReuseaddr(true);
+	// SetSoKeepalive(true);
 }
 
 void TcpSocket::SetLineProtocol(bool x)
@@ -606,11 +621,11 @@ bool TcpSocket::SetTcpNodelay(bool x)
 TcpSocket::CircularBuffer::CircularBuffer(size_t size)
 	:
 		buf(new char[2 * size]),
-		m_max(size)
-,m_q(0)
-,m_b(0)
-,m_t(0)
-,m_count(0)
+		m_max(size),
+		m_q(0),
+		m_b(0),
+		m_t(0),
+		m_count(0)
 {
 }
 
@@ -622,27 +637,24 @@ TcpSocket::CircularBuffer::~CircularBuffer()
 
 
 
-bool TcpSocket::CircularBuffer::Write(const char *s,size_t l)
+bool TcpSocket::CircularBuffer::Write(const char* c,size_t l)
 {
-	if (m_q + l > m_max)
-	{
+	if (m_q + l > m_max) {
 		return false; // 溢出
 	}
 	m_count += (unsigned long)l;
-	if (m_t + l > m_max) // 块跨越圆形边界
-	{
+	if (m_t + l > m_max) {
 		size_t l1 = m_max - m_t; // 直到圆形过境点的剩余尺寸
 		// 总是将完整块复制到缓冲区（buf）+顶部指针（m_t）
 		// 因为出于性能原因我们将缓冲区大小增加了一倍
-		memcpy(buf + m_t, s, l);
-		memcpy(buf, s + l1, l - l1);
+		memcpy(buf + m_t, c, l);
+		memcpy(buf, c + l1, l - l1);
 		m_t = l - l1;
 		m_q += l;
-	}
-	else
-	{
-		memcpy(buf + m_t, s, l);
-		memcpy(buf + m_max + m_t, s, l);
+	} 
+	else {
+		memcpy(buf + m_t, c, l);
+		memcpy(buf + m_max + m_t, c, l);
 		m_t += l;
 		if (m_t >= m_max)
 			m_t -= m_max;
@@ -747,26 +759,21 @@ void TcpSocket::OnConnectTimeout()
 	Handler().LogError(this, "connect", -1, "connect timeout", LOG_LEVEL_FATAL);
 
 	if (GetConnectionRetry() == -1 ||
-		(GetConnectionRetry() && GetConnectionRetries() < GetConnectionRetry()) )
-	{
+		(GetConnectionRetry() && GetConnectionRetries() < GetConnectionRetry())) {
 		IncreaseConnectionRetries();
 		// 如果我们应该继续尝试，请通过 OnConnectRetry 回调询问套接字
-		if (OnConnectRetry())
-		{
+		if (OnConnectRetry()) {
 			SetRetryClientConnect();
 		}
-		else
-		{
+		else {
 			SetCloseAndDelete( true );
 			// TODO: 说明连接失败的原因
 			OnConnectFailed();
-			//
 			SetConnecting(false);
 		}
 	}
-	else
-	{
-		SetCloseAndDelete(true);
+	else {
+	 	SetCloseAndDelete(true);
 		// TODO: 说明连接失败的原因
 		OnConnectFailed();
 		//

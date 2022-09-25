@@ -8,6 +8,7 @@
 #ifndef __SOCKET_Socket_include_H__
 #define __SOCKET_Socket_include_H__
 
+#include <unistd.h>
 #include "SocketConfig.h"
 
 #define INVALID_SOCKET -1
@@ -28,19 +29,17 @@ typedef unsigned short port_t;
 // --->
 
 // getaddrinfo / getnameinfo 更换
-#ifdef NO_GETADDRINFO
-#ifndef AI_NUMERICHOST
+// #ifdef NO_GETADDRINFO
+// #ifndef AI_NUMERICHOST
 #define AI_NUMERICHOST 1
-#endif
-#ifndef NI_NUMERICHOST
+// #endif
+// #ifndef NI_NUMERICHOST
 #define NI_NUMERICHOST 1
-#endif
-#endif
+// #endif
+// #endif
 
 /* 关闭文件描述符FD
 		这个函数是一个取消点，因此没有用THROW标记 */
-extern int close (int __fd);
-
 #define closesocket close
 
 

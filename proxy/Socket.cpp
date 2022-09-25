@@ -111,9 +111,8 @@ SOCKET Socket::CreateSocket(int af, int type, const std::string& protocol)
 	}
 
 	int protno = p ? p->p_proto : 0;
-		
+
 	s = socket(af, type, protno);
-	
 	if (s == INVALID_SOCKET) {
 		Handler().LogError(this, "socket", Errno, StrError(Errno), LOG_LEVEL_FATAL);
 		SetCloseAndDelete(true);
@@ -122,9 +121,22 @@ SOCKET Socket::CreateSocket(int af, int type, const std::string& protocol)
 
 	Attach(s);
 	OnOptions(af, type, protno, s);
-	Attach(INVALID_SOCKET);
+	// Attach(INVALID_SOCKET);
 	return s;
 }
+
+// SOCKET Socket::CreateSocket_Epoll(int af, int type, const std::string &protocol)
+// {
+//   struct protoent* p = nullptr;
+//   SOCKET fd;
+// #ifdef ENABLE_POOL
+//   m_socket_type = type;
+//   m_socket_protocol = protocol;
+// #endif
+//   if (protocol.size()) {
+//     p = getprotobyname(const char *__name)
+//   }
+// }
 
 void Socket::Attach(SOCKET s) 
 {
@@ -147,7 +159,7 @@ int Socket::Close()
 	int n;
 	Handler().ISocketHandler_Del(this);
 
-	if ((n = closesocket(m_socket)) == -1) {
+  if ((n = closesocket(m_socket)) == -1) {
 		Handler().LogError(this, "close", Errno,StrError(Errno), LOG_LEVEL_ERROR);
 	}
 	m_socket = INVALID_SOCKET;
@@ -180,6 +192,7 @@ port_t Socket::GetPort()
 
 bool Socket::SetNonblocking(bool b)
 {
+#ifdef ENABLE_SELECT
 	if (b) {
 		if (fcntl(m_socket, F_SETFL, O_NONBLOCK) == -1) {
 			Handler().LogError(this, "SetNonblocking", Errno, StrError(Errno), LOG_LEVEL_ERROR);
@@ -191,11 +204,29 @@ bool Socket::SetNonblocking(bool b)
 			return false;
 		}
 	}
+#endif
+
+#ifdef ENABLE_EPOLL
+	if (b) {
+		if (fcntl(m_socket, F_GETFD, 0) < 0) {
+			// 设置连接为非阻塞模式
+			int flags = fcntl(m_socket, F_GETFD);
+			if (flags < 0) {
+				Handler().LogError(this, "SetNonblocking", Errno, StrError(Errno), LOG_LEVEL_ERROR);
+				return false;
+			}
+			if (fcntl(m_socket, flags | O_NONBLOCK) < 0) {
+				Handler().LogError(this, "SetNonblocking", Errno, StrError(Errno), LOG_LEVEL_ERROR);
+			}
+		}
+	}
+#endif
 	return true;
 }
 
 bool Socket::SetNonblocking(bool b, SOCKET s)
 {
+#ifdef ENABLE_SELECT
 	if (b) {
 		if (fcntl(s, F_SETFL, O_NONBLOCK) == -1) {
 			Handler().LogError(this, "SetNonblocking", Errno, StrError(Errno), LOG_LEVEL_ERROR);
@@ -207,6 +238,23 @@ bool Socket::SetNonblocking(bool b, SOCKET s)
 			return false;
 		}
 	}
+#endif
+
+#ifdef ENABLE_EPOLL
+	if (b) {
+		if (fcntl(s, F_GETFD, 0) < 0) {
+			// 设置连接为非阻塞模式
+			int flags = fcntl(m_socket, F_GETFD);
+			if (flags < 0) {
+				Handler().LogError(this, "SetNonblocking", Errno, StrError(Errno), LOG_LEVEL_ERROR);
+				return false;
+			}
+			if (fcntl(s, flags | O_NONBLOCK) < 0) {
+				Handler().LogError(this, "SetNonblocking", Errno, StrError(Errno), LOG_LEVEL_ERROR);
+			}
+		}
+	}
+#endif
 	return true;
 }
 
@@ -507,6 +555,13 @@ std::string Socket::GetSockAddress()
 	return addr.Convert();
 }
 
+int Socket::SoError()
+{
+	int value = 0;
+	Handler().LogError(this, "socket option not available", 0, "SO_ERROR", LOG_LEVEL_ERROR);
+	return value;
+}
+
 #ifdef ENABLE_POOL
 
 void Socket::SetIsClient()
@@ -617,6 +672,11 @@ bool Socket::Detach()
 	}
 	SetDetach();
 	return true;
+}
+
+void Socket::SetDetached(bool b)
+{
+	m_detached = b;
 }
 
 void Socket::SetSlaveHandler(ISocketHandler* p)

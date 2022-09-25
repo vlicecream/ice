@@ -40,13 +40,11 @@ Ipv4Address::Ipv4Address(const std::string& host,port_t port) : m_valid(false)
 	memset(&m_addr, 0, sizeof(m_addr));
 	m_addr.sin_family = AF_INET;
 	m_addr.sin_port = htons( port );
+	ipaddr_t a;
+	if (Utility::u2ip(host, a))
 	{
-		ipaddr_t a;
-		if (Utility::u2ip(host, a))
-		{
-			memcpy(&m_addr.sin_addr, &a, sizeof(struct in_addr));
-			m_valid = true;
-		}
+		memcpy(&m_addr.sin_addr, &a, sizeof(struct in_addr));
+		m_valid = true;
 	}
 }
 
@@ -62,9 +60,9 @@ Ipv4Address::~Ipv4Address()
 {
 }
 
-Ipv4Address::operator struct sockaddr *()
+Ipv4Address::operator struct sockaddr*()
 {
-	return (struct sockaddr *)&m_addr;
+	return (struct sockaddr*)&m_addr;
 }
 
 
@@ -76,7 +74,8 @@ Ipv4Address::operator socklen_t()
 
 void Ipv4Address::SetPort(port_t port)
 {
-	m_addr.sin_port = htons( port );
+	/* htons 将主机字节顺序变成网络字节顺序 */
+	m_addr.sin_port = htons(port);
 }
 
 
@@ -91,13 +90,15 @@ bool Ipv4Address::Resolve(const std::string& hostname,struct in_addr& a)
 	memset(&a, 0, sizeof(a));
 	if (Utility::isipv4(hostname))
 	{
-		if (!Utility::u2ip(hostname, sa, AI_NUMERICHOST))
+		if (!Utility::u2ip(hostname, sa, AI_NUMERICHOST)) {
 			return false;
+		}
 		a = sa.sin_addr;
 		return true;
 	}
-	if (!Utility::u2ip(hostname, sa))
+	if (!Utility::u2ip(hostname, sa)) {
 		return false;
+	}
 	a = sa.sin_addr;
 	return true;
 }
@@ -115,8 +116,9 @@ bool Ipv4Address::Reverse(struct in_addr& a,std::string& name)
 
 std::string Ipv4Address::Convert(bool include_port)
 {
-	if (include_port)
+	if (include_port) {
 		return Convert(m_addr.sin_addr) + ":" + Utility::l2string(GetPort());
+	}
 	return Convert(m_addr.sin_addr);
 }
 
@@ -127,7 +129,7 @@ std::string Ipv4Address::Convert(struct in_addr& a)
 	sa.sin_family = AF_INET;
 	sa.sin_addr = a;
 	std::string name;
-	Utility::reverse((struct sockaddr *)&sa, sizeof(sa), name, NI_NUMERICHOST);
+	Utility::reverse((struct sockaddr*)&sa, sizeof(sa), name, NI_NUMERICHOST);
 	return name;
 }
 
@@ -149,17 +151,20 @@ bool Ipv4Address::IsValid()
 	return m_valid;
 }
 
-bool Ipv4Address::operator==(SocketAddress& a)
+bool Ipv4Address::operator==(SocketAddress& address)
 {
-	if (a.GetFamily() != GetFamily())
+	if (address.GetFamily() != GetFamily())
 		return false;
-	if ((socklen_t)a != sizeof(m_addr))
+	if ((socklen_t)address != sizeof(m_addr))
 		return false;
-	struct sockaddr *sa = a;
+	struct sockaddr* sa = address;
 	struct sockaddr_in *p = (struct sockaddr_in *)sa;
 	if (p -> sin_port != m_addr.sin_port)
 		return false;
-	if (memcmp(&p -> sin_addr, &m_addr.sin_addr, 4))
+	/*
+		memcmp -> 将前两个参数的内存块 进行比较
+			比较字节大小为 第三个参数 */
+	if (!memcmp(&p -> sin_addr, &m_addr.sin_addr, 4))
 		return false;
 	return true;
 }

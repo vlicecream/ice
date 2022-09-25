@@ -6,6 +6,7 @@
 
 
 #include <semaphore.h>
+
 #include "Semaphore.h"
 
 Semaphore::Semaphore(value_t start_val)

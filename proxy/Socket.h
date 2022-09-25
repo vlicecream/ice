@@ -18,11 +18,12 @@
 #include "SocketConfig.h"
 #include "SocketInclude.h"
 #include "SocketAddress.h"
-#include "ISocketHandler.h"
-#include "IFile.h"
-#include "SocketThread.h"
 #include "Thread.h"
 
+class ISocketHandler;
+class SocketAddress;
+class IFile;
+class SocketThread;
 
 class Socket {
 
@@ -56,6 +57,8 @@ public:
 	 *				 protocol -> "TCP" / "UDP" / ...
 	 * */
 	SOCKET CreateSocket(int af, int type, const std::string& protocol = "");
+
+	// SOCKET CreateSocket_Epoll(int af, int type, const std::string& protocol = "");
 	
 	/* 为这个 socket 分配一个由 socket() 或其他方法 产生的文件描述符 */
 	void Attach(SOCKET s);
@@ -263,12 +266,6 @@ public:
 	std::unique_ptr<SocketAddress> GetRemoteSocketAddress();
 	/* 返回远端地址: ipv4. */
 	ipaddr_t GetRemoteIP4();
-// #ifdef ENABLE_IPV6
-//   [> 返回远端地址: ipv6. <]
-// #ifdef IPPROTO_IPV6
-//   struct in6_addr GetRemoteIP6();
-// #endif
-// #endif
 
 	/* 返回远程端口号: ipv4 and ipv6. */
 	port_t GetRemotePort();
@@ -417,14 +414,8 @@ protected:
 	/* 如果设置了 所有流量都将写入这个文件 */
 	IFile *GetTrafficMonitor() { return m_traffic_monitor; }
 
-	// #ifdef HAVE_OPENSSL
-	// bool m_b_enable_ssl; //< 为此 TcpSocket 启用 SSL
-	// bool m_b_ssl; //< SSL协商模式(TcpSocket)
-	// bool m_b_ssl_server; //< 如果传入的是 SSL TcpSocket 则为 true
-	// #endif
-
 private:
-	ISocketHandler& m_handler;	//< socket 中的 headler 引用
+	ISocketHandler& m_handler;	//< socket 中的 hendler 引用
 	SOCKET m_socket; //< 文件描述符
 	bool m_bDel; //< 删除 handler 标志
 	bool m_bClose; //< 关闭并删除 标志

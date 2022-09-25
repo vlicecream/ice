@@ -10,7 +10,6 @@
 
 #include "SocketConfig.h"
 #include "StreamSocket.h"
-
 #include "Mutex.h"
 #include <map>
 
@@ -63,7 +62,7 @@ protected:
 		CircularBuffer(const CircularBuffer& ) {}
 		CircularBuffer& operator=(const CircularBuffer& ) { return *this; }
 		char *buf;
-		size_t m_max;
+		size_t m_max; // 最大的缓冲区
 		size_t m_q;
 		size_t m_b;
 		size_t m_t;
@@ -103,6 +102,9 @@ public:
 	bool Open(ipaddr_t ip, port_t port, bool skip_socks = false);
 	bool Open(SocketAddress&, bool skip_socks = false);
 	bool Open(SocketAddress&, SocketAddress& bind_address, bool skip_socks = false);
+
+	/* bind and listen */ 
+	bool Bind(SocketAddress& sockAddr, const std::string& protocol, int backlog);
 
 	/* 打开连接
 	  param host -> Hostname

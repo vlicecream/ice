@@ -14,7 +14,6 @@
 
 typedef void* threadfunc_t;
 typedef void* threadparam_t;
-// #define STDPREFIX
 
 class Thread
 {

@@ -142,6 +142,23 @@ void UdpSocket::CreateConnection()
 	}
 }
 
+void UdpSocket::SendBuf(const char* data, size_t len, int flags)
+{
+	if (!IsConnected()) {
+		Handler().LogError(this, "SendBuf", 0, "not_connected", LOG_LEVEL_ERROR);
+		return;
+	}
+
+	if ((m_last_size_written = send(GetSocket(), data, (int)len, flags)) == -1) {
+		Handler().LogError(this, "SendBuf", 0, "not_connected", LOG_LEVEL_ERROR);
+	}
+}
+
+void UdpSocket::Send(const std::string& str, int flags)
+{
+	SendBuf(str.c_str(), (int)str.size(), flags);
+}
+
 void UdpSocket::SendToBuf(const std::string& str, port_t port, const char*data, int len, int flags)
 {
 	Ipv4Address ad(str, port);

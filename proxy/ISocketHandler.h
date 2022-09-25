@@ -15,8 +15,8 @@
 #include "Socket.h"
 #include "StdLog.h"
 
-// class SocketAddress;
-// class IMutex;
+class SocketAddress;
+class IMutex;
 
 class ISocketHandler
 {
@@ -26,7 +26,7 @@ class ISocketHandler
 public:
 	/* ISocketHandler 内部使用的连接池类 */
 #ifdef ENABLE_POOL
-	class PoolSocket : public Socket 
+	class PoolSocket : public Socket
 	{
 		public:
 			PoolSocket(ISocketHandler& h, Socket *src) : Socket(h) {
@@ -50,7 +50,7 @@ public:
 
 	/* 返回另一个实例 */
 	virtual ISocketHandler* Create(StdLog* = nullptr) = 0;
-	virtual ISocketHandler* ISocketHandler::Create(IMutex&, ISocketHandler&, StdLog* = nullptr) = 0;
+	virtual ISocketHandler* Create(IMutex&, ISocketHandler&, StdLog* = nullptr) = 0;
 
 	/* 使用父级创建的处理程序 */
 	virtual bool ParentHandlerIsValid() = 0;
