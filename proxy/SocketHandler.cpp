@@ -466,7 +466,6 @@ void SocketHandler::ISocketHandler_Epoll(int epollFd)
 	}
 
 	// 遍历所有的事件
-	// TODO: 可写事件 EPOLLOUT & 失败重写
 	for (int i = 0; i < eNum; ++i) {
 		for (socket_m::iterator it = m_sockets.begin(); it != m_sockets.end(); ++it) {
 			// 判断这次是不是socket可读(是不是有新的连接)
@@ -499,7 +498,11 @@ void SocketHandler::ISocketHandler_Epoll(int epollFd)
 				}
 				// 如果是可读事件
 				else if (m_events[i].events & EPOLLIN) {
-					// TODO: 读写数据
+					it->second->OnRead();
+				}
+				// 如果是可写事件
+				else if (m_events[i].events & EPOLLOUT) {
+					it->second->OnWrite();
 				}
 			}
 		}

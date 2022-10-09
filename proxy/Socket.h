@@ -125,8 +125,11 @@ public:
 
 	// \名称事件回调\ {
 	
-	/* 当文件描述符中有内容要读取时调用 */
+	/* 当文件描述符中有内容要读取时调用(弃用) */
 	virtual void OnRead();
+
+	/* 当文件描述符中有内容要读取时调用 */
+	virtual void OnRead(char *buf, size_t n, int fd);
 
 	/* 当文件描述符上有另一个写入空间时调用 */
 	virtual void OnWrite();
@@ -362,6 +365,18 @@ public:
 	/* 为此套接字创建新线程以分离运行 */
 	void DetachSocket();
 	#endif // ENABLE_DETACH
+
+	#ifdef ENABLE_EPOLL
+
+	// 让子类重写 向缓冲区中读取内容
+	virtual int ReadBuff(char *buff, int len);
+
+	// 让子类重写 向缓冲区中写内容
+	virtual int WriteBuff(char *buff, int len);
+
+	// 让子类重写 向缓冲区中重写内容
+	virtual int ReWritr();
+	#endif
 
 	socketuid_t UniqueIdentifier() { return m_uid; }
 

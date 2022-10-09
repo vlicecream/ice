@@ -10,6 +10,7 @@
 #include <stdarg.h>
 #include <map>
 #include <stdio.h>
+#include <sys/epoll.h>
 
 #include "ISocketHandler.h"
 #include "TcpSocket.h"
@@ -195,47 +196,48 @@ bool TcpSocket::Open(const std::string &host,port_t port)
 
 void TcpSocket::OnRead()
 {
-	int n = 0;
-	char buf[TCP_BUFSIZE_READ];
-	n = recv(GetSocket(), buf, TCP_BUFSIZE_READ, MSG_NOSIGNAL);
-	if (n == -1) {
-		Handler().LogError(this, "read", Errno, StrError(Errno), LOG_LEVEL_FATAL);
-		// 当检测到断开连接时 TODO: 应该重启连接
-		OnDisconnect();
-		OnDisconnect(TCP_DISCONNECT_ERROR, Errno);
-		// 设置关闭和删除以终止连接
-		SetCloseAndDelete(true);
-		// 在关闭之前设置刷新以使 tcp 套接字在关闭连接之前完全清空其输出缓冲区 false 不清空
-		SetFlushBeforeClose(false);
-		// 连接丢失-读取/写入套接字时出错-仅TcpSocket
-		SetLost();
-		return;
-	} else if (!n) {
-		OnDisconnect();
-		OnDisconnect(0, 0);
-		SetCloseAndDelete(true);
-		SetFlushBeforeClose(false);
-		SetLost();
-		SetShutdown(SHUT_WR);
-		return;
-	} else if (n > 0 && n <= TCP_BUFSIZE_READ) {
-		m_bytes_received += n;
-		// 写入文件
-		if (GetTrafficMonitor()) {
-			GetTrafficMonitor() -> fwrite(buf, 1, n);
-		}
-		if (!m_b_input_buffer_disabled && !ibuf.Write(buf,n)) {
-			Handler().LogError(this, "OnRead", 0, "ibuf overflow", LOG_LEVEL_WARNING);
-		}
-	} else {
-		Handler().LogError(this, "OnRead", n, "abnormal value from recv", LOG_LEVEL_ERROR);
-	}
-	//
-	OnRead( buf, n );
+	// int n = 0;
+	// char buf[TCP_BUFSIZE_READ];
+	// n = recv(GetSocket(), buf, TCP_BUFSIZE_READ, MSG_NOSIGNAL);
+	// if (n == -1) {
+	//   Handler().LogError(this, "read", Errno, StrError(Errno), LOG_LEVEL_FATAL);
+	//   // 当检测到断开连接时 TODO: 应该重启连接
+	//   OnDisconnect();
+	//   OnDisconnect(TCP_DISCONNECT_ERROR, Errno);
+	//   // 设置关闭和删除以终止连接
+	//   SetCloseAndDelete(true);
+	//   // 在关闭之前设置刷新以使 tcp 套接字在关闭连接之前完全清空其输出缓冲区 false 不清空
+	//   SetFlushBeforeClose(false);
+	//   // 连接丢失-读取/写入套接字时出错-仅TcpSocket
+	//   SetLost();
+	//   return;
+	// } else if (!n) {
+	//   OnDisconnect();
+	//   OnDisconnect(0, 0);
+	//   SetCloseAndDelete(true);
+	//   SetFlushBeforeClose(false);
+	//   SetLost();
+	//   SetShutdown(SHUT_WR);
+	//   return;
+	// } else if (n > 0 && n <= TCP_BUFSIZE_READ) {
+	//   m_bytes_received += n;
+	//   // 写入文件
+	//   if (GetTrafficMonitor()) {
+	//     GetTrafficMonitor() -> fwrite(buf, 1, n);
+	//   }
+	//   if (!m_b_input_buffer_disabled && !ibuf.Write(buf,n)) {
+	//     Handler().LogError(this, "OnRead", 0, "ibuf overflow", LOG_LEVEL_WARNING);
+	//   }
+	// } else {
+	//   Handler().LogError(this, "OnRead", n, "abnormal value from recv", LOG_LEVEL_ERROR);
+	// }
+	// //
+	// OnRead( buf, n );
 }
 
-void TcpSocket::OnRead( char *buf, size_t n )
+void TcpSocket::OnRead(char *buf, size_t n, int fd)
 {
+#ifdef ENABLE_SELECT
 	// 无缓冲
 	if (n > 0 && n <= TCP_BUFSIZE_READ) {
 		if (LineProtocol()) {
@@ -299,6 +301,17 @@ void TcpSocket::OnRead( char *buf, size_t n )
 	if (m_b_input_buffer_disabled) {
 		return;
 	}
+
+#endif // ENABLE_SELECT
+			 
+#ifdef ENABLE_EPOLL
+
+	int len = ::read(fd, buf, n);
+	if (len == -1) {
+		epoll_ctl(this->eFd, EPOLL_CTL_DEL, session->sessionId(), nullptr);
+	}
+
+#endif // ENABLE_EPOLL
 }
 
 void TcpSocket::OnWriteComplete()

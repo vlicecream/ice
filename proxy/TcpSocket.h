@@ -84,7 +84,7 @@ protected:
 		size_t _q;
 		char _buf[TCP_OUTPUT_CAPACITY];
 	};
-	typedef std::list<OUTPUT *> output_l;
+	typedef std::list<OUTPUT*> output_l;
 
 public:
 	/* 具有输入/输出缓冲区标准值的构造函数 */
@@ -112,13 +112,13 @@ public:
 	bool Open(const std::string &host, port_t port);
 
 	/* 连接超时回调 */
-	void OnConnectTimeout();
+	void OnConnectTimeout() override;
 	
 	/* 关闭文件描述符 */
-	int Close();
+	int Close() override;
 
 	/* 发送一个字符串 */
-	void Send(const std::string &s, int f = 0);
+	void Send(const std::string &s, int f = 0) override;
 
 	/* 使用 printf 格式发送字符串 */
 	void Sendf(const char *format, ...);
@@ -126,7 +126,7 @@ public:
 	/* 发送字节缓冲区 
 			param buf -> 指向数据的指针
 			param len -> 数据的长度 */
-	void SendBuf(const char *buf, size_t len, int f = 0);
+	void SendBuf(const char *buf, size_t len, int f = 0) override;
 
 	/* 在成功读取套接字之后执行此回调
 		param buf -> 指向数据的指针
@@ -149,13 +149,13 @@ public:
 
 	/* 当线路协议中的套接字读取一整行时触发回调
 			param line -> Line read */
-	void OnLine(const std::string& line);
+	void OnLine(const std::string& line) override;
 
 	/* 获取接收字节数的计数器 */
-	uint64_t GetBytesReceived(bool clear = false);
+	uint64_t GetBytesReceived(bool clear = false) override;
 
 	/* 获取发送字节数的计数器 */
-	uint64_t GetBytesSent(bool clear = false);
+	uint64_t GetBytesSent(bool clear = false) override;
 
 	/* Socks4 特定回调 */
 	void OnSocks4Connect();
@@ -167,9 +167,9 @@ public:
 	/* 如果您仅使用 OnRawData 处理接收到的数据，请使用此选项 */
 	void DisableInputBuffer(bool = true);
 
-	void OnOptions(int,int,int,SOCKET);
+	void OnOptions(int,int,int,SOCKET) override;
 
-	void SetLineProtocol(bool = true);
+	void SetLineProtocol(bool = true) override;
 
 
 	/* 使用 SetLineProtocol = true 时获取未完成的行
@@ -179,7 +179,7 @@ public:
 	// TCP 选项
 	bool SetTcpNodelay(bool = true);
 
-	virtual int Protocol();
+	virtual int Protocol() override;
 
 	/* 回调 OnTransferLimit 的触发限制 */
 	void SetTransferLimit(size_t sz);
@@ -190,9 +190,9 @@ public:
 protected:
 	TcpSocket(const TcpSocket& );
 
-	void OnRead();
-	void OnRead( char *buf, size_t n );
-	void OnWrite();
+	void OnRead() override;
+	void OnRead(char *buf, size_t n, int fd) override;
+	void OnWrite() override;
 
 	CircularBuffer ibuf; //< 循环输入缓冲区
 
